@@ -1,24 +1,53 @@
+import AllRecords from "./pages/AllRecords";
+import AddRecord from "./pages/AddRecord";
 import { useEffect, useState } from "react";
+import Sidebar from "./components/Sidebar";
+import Dashboard from "./pages/Dashboard";
+import "./App.css";
 
 function App() {
-  const [message, setMessage] = useState("Connecting to backend...");
+  const [activePage, setActivePage] = useState(
+  () => localStorage.getItem("activePage") || "Dashboard"
+);
 
   useEffect(() => {
-    fetch("http://localhost:5000/")
-      .then((response) => response.text())
-      .then((data) => {
-        setMessage(data);
-      })
-      .catch((error) => {
-        console.error(error);
-        setMessage("Backend connection failed");
-      });
-  }, []);
+    localStorage.setItem("activePage", activePage);
+  }, [activePage]);
 
   return (
-    <div>
-      <h1>Data Redundancy Removal System</h1>
-      <p>{message}</p>
+    <div className="app-layout">
+      <Sidebar
+        activePage={activePage}
+        setActivePage={setActivePage}
+      />
+
+      {activePage === "Dashboard" ? (
+        <Dashboard />
+      ) : activePage === "Add Record" ? (
+        <AddRecord />
+      ) : activePage === "All Records" ? (
+        <AllRecords />
+      ) : ( 
+        <main className="dashboard">
+          <header className="topbar">
+            <div>
+              <p className="breadcrumb">Workspace / {activePage}</p>
+              <h1>{activePage}</h1>
+              <p className="page-description">
+                Manage and monitor your data quality.
+              </p>
+            </div>
+          </header>
+
+          <section className="content-panel">
+            <h2>{activePage}</h2>
+            <p>
+              This section is ready for development. We will add its
+              functionality in the next steps.
+            </p>
+          </section>
+        </main>
+      )}
     </div>
   );
 }

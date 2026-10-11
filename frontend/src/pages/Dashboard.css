@@ -1,0 +1,36 @@
+/* Keep headings fixed and align data underneath */
+.recent-activity-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+/* Keep heading positions unchanged */
+.recent-activity-table thead th {
+  text-align: inherit;
+}
+
+/* Align each data cell with its corresponding heading */
+.recent-activity-table tbody td {
+  text-align: inherit;
+  padding: 14px 12px;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+/* Match the data columns to the existing heading columns */
+.recent-activity-table tbody td:nth-child(1) {
+  width: 23%;
+}
+
+.recent-activity-table tbody td:nth-child(2) {
+  width: 32%;
+}
+
+.recent-activity-table tbody td:nth-child(3) {
+  width: 20%;
+}
+
+.recent-activity-table tbody td:nth-child(4) {
+  width: 25%;
+}
