@@ -2,6 +2,8 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 console.log("MONGODB_URI loaded:", Boolean(process.env.MONGODB_URI));
 
@@ -9,12 +11,195 @@ const Record = require("./models/Record");
 const DuplicateAttempt = require("./models/DuplicateAttempt");
 const InvalidAttempt = require("./models/InvalidAttempt");
 const PossibleDuplicate = require("./models/PossibleDuplicate");
+const User = require("./models/User");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 app.use(cors());
 app.use(express.json());
+
+function getJwtSecret() {
+  if (typeof JWT_SECRET !== "string" || JWT_SECRET.length < 32) {
+    console.error("JWT_SECRET must be configured with at least 32 characters.");
+    return null;
+  }
+
+  return JWT_SECRET;
+}
+
+function authenticateToken(req, res, next) {
+  const authorization = req.headers.authorization;
+  const token = authorization?.startsWith("Bearer ")
+    ? authorization.slice(7)
+    : null;
+
+  if (!token) {
+    return res.status(401).json({
+      message: "Authentication required.",
+    });
+  }
+
+  const jwtSecret = getJwtSecret();
+
+  if (!jwtSecret) {
+    return res.status(500).json({
+      message: "Authentication is not configured.",
+    });
+  }
+
+  try {
+    req.user = jwt.verify(token, jwtSecret);
+    return next();
+  } catch (error) {
+    return res.status(401).json({
+      message: "Invalid or expired authentication token.",
+    });
+  }
+}
+
+// Register a new user
+app.post("/api/register", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (
+      typeof name !== "string" ||
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !name.trim() ||
+      !email.trim() ||
+      !password.trim()
+    ) {
+      return res.status(400).json({
+        message: "Name, email and password are required.",
+      });
+    }
+
+    const normalizedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedName) {
+      return res.status(400).json({
+        message: "Name cannot be empty.",
+      });
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(normalizedEmail)) {
+      return res.status(400).json({
+        message: "Please enter a valid email address.",
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters long.",
+      });
+    }
+
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        message: "An account with this email already exists.",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const user = await User.create({
+      name: normalizedName,
+      email: normalizedEmail,
+      password: hashedPassword,
+    });
+
+    return res.status(201).json({
+      message: "Registration successful.",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({
+        message: "An account with this email already exists.",
+      });
+    }
+
+    console.error("Registration failed:", error.message);
+
+    return res.status(500).json({
+      message: "Unable to register. Please try again.",
+    });
+  }
+});
+
+// Log in an existing user
+app.post("/api/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email.trim() ||
+      !password
+    ) {
+      return res.status(400).json({
+        message: "Email and password are required.",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({
+        message: "Invalid email or password.",
+      });
+    }
+
+    const jwtSecret = getJwtSecret();
+
+    if (!jwtSecret) {
+      return res.status(500).json({
+        message: "Authentication is not configured.",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        sub: user._id.toString(),
+        email: user.email,
+      },
+      jwtSecret,
+      { expiresIn: "2h" }
+    );
+
+    return res.status(200).json({
+      message: "Login successful.",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Login failed:", error.message);
+
+    return res.status(500).json({
+      message: "Unable to login. Please try again.",
+    });
+  }
+});
 
 async function saveInvalidAttempt(data, reason) {
   try {
@@ -49,7 +234,7 @@ app.get("/", (req, res) => {
 });
 
 // Create a new record
-app.post("/api/records", async (req, res) => {
+app.post("/api/records", authenticateToken, async (req, res) => {
   try {
     const { fullName, email, phone, department } = req.body;
 
@@ -111,8 +296,6 @@ if (!/^[0-9]{10}$/.test(normalizedPhone)) {
     });
 
     if (existingRecord) {
-        
-if (existingRecord) {
   try {
     await DuplicateAttempt.create({
       fullName: normalizedName,
@@ -137,11 +320,6 @@ if (existingRecord) {
     status: "DUPLICATE",
     message: "A record with this email already exists.",
   });
-}
-      return res.status(409).json({
-        status: "DUPLICATE",
-        message: "A record with this email already exists.",
-      });
     }
 
     
@@ -225,7 +403,7 @@ if (existingRecord) {
 });
 
 // Get all saved records
-app.get("/api/records", async (req, res) => {
+app.get("/api/records", authenticateToken, async (req, res) => {
   try {
     const records = await Record.find()
       .sort({ createdAt: -1 })
@@ -245,7 +423,7 @@ app.get("/api/records", async (req, res) => {
 });
 
 
-app.get("/api/duplicates", async (req, res) => {
+app.get("/api/duplicates", authenticateToken, async (req, res) => {
   try {
     const duplicates = await DuplicateAttempt.find()
       .sort({ createdAt: -1 })
@@ -268,7 +446,7 @@ app.get("/api/duplicates", async (req, res) => {
 });
 
 
-app.get("/api/invalid-attempts", async (req, res) => {
+app.get("/api/invalid-attempts", authenticateToken, async (req, res) => {
   try {
     const invalidAttempts = await InvalidAttempt.find()
       .sort({ createdAt: -1 })
@@ -291,7 +469,7 @@ app.get("/api/invalid-attempts", async (req, res) => {
 });
 
 // Get possible duplicate records
-app.get("/api/possible-duplicates", async (req, res) => {
+app.get("/api/possible-duplicates", authenticateToken, async (req, res) => {
   try {
     const possibleDuplicates = await PossibleDuplicate.find()
       .populate("newRecord", "fullName email phone department")
@@ -312,6 +490,68 @@ app.get("/api/possible-duplicates", async (req, res) => {
     res.status(500).json({
       message: "Unable to fetch possible duplicates.",
     });
+  }
+});
+
+
+app.get("/api/activity", authenticateToken, async (req, res) => {
+  try {
+    const [records, duplicates, invalidAttempts, possibleDuplicates] =
+      await Promise.all([
+        Record.find().sort({ createdAt: -1 }).limit(10).lean(),
+        DuplicateAttempt.find().sort({ createdAt: -1 }).limit(10).lean(),
+        InvalidAttempt.find().sort({ createdAt: -1 }).limit(10).lean(),
+       PossibleDuplicate.find()
+  .populate("newRecord", "fullName email")
+  .sort({ createdAt: -1 })
+  .limit(10)
+  .lean(),
+      ]);
+
+    const activities = [
+      ...records.map((item) => ({
+        id: `record-${item._id}`,
+        name: item.fullName || "Unknown",
+        email: item.email || "",
+        status: "Record Added",
+        createdAt: item.createdAt,
+      })),
+      ...duplicates.map((item) => ({
+        id: `duplicate-${item._id}`,
+        name: item.fullName || "Unknown",
+        email: item.email || "",
+        status: "Duplicate Detected",
+        createdAt: item.createdAt,
+      })),
+      ...invalidAttempts.map((item) => ({
+        id: `invalid-${item._id}`,
+        name: item.fullName || "Unknown",
+        email: item.email || "",
+        status: "Invalid Attempt",
+        createdAt: item.createdAt,
+      })),
+      ...possibleDuplicates.map((item) => ({
+  id: `possible-${item._id}`,
+  name: item.newRecord?.fullName || "Unknown",
+  email: item.newRecord?.email || "",
+  status: "Possible Duplicate",
+  createdAt: item.createdAt,
+})),
+    ];
+
+    activities.sort(
+      (a, b) =>
+        new Date(b.createdAt || 0).getTime() -
+        new Date(a.createdAt || 0).getTime()
+    );
+
+    res.status(200).json({
+      count: activities.length,
+      activities: activities.slice(0, 10),
+    });
+  } catch (error) {
+    console.error("Fetching activity failed:", error.message);
+    res.status(500).json({ message: "Unable to fetch activity." });
   }
 });
 

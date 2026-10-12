@@ -101,6 +101,23 @@
   margin-top: auto;
 }
 
+.logout-button {
+  margin-left: auto;
+  padding: 7px 9px;
+  border: 1px solid #53617d;
+  border-radius: 7px;
+  background: transparent;
+  color: #c0cbe0;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background: #202e4c;
+  color: white;
+}
+
 .status-dot {
   width: 9px;
   height: 9px;
@@ -579,6 +596,112 @@ tbody tr:last-child td {
   overflow-wrap: anywhere;
 }
 
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #edf2ff, #f8faff);
+}
+
+.auth-card {
+  width: min(100%, 460px);
+  padding: 34px;
+  border: 1px solid #e1e7f3;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 18px 50px #1b2e5a14;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 34px;
+}
+
+.auth-brand h1 {
+  color: #17233c;
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+
+.auth-brand p {
+  color: #8993a7;
+  font-size: 11px;
+  margin: 0;
+}
+
+.auth-heading {
+  margin-bottom: 25px;
+}
+
+.auth-eyebrow {
+  color: #315bd6;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  margin: 0 0 10px;
+}
+
+.auth-heading h2 {
+  color: #1c2942;
+  font-size: 24px;
+  margin: 0 0 8px;
+}
+
+.auth-heading p:last-child {
+  color: #77839a;
+  font-size: 13px;
+  margin: 0;
+}
+
+.auth-form {
+  display: grid;
+  gap: 17px;
+}
+
+.auth-submit {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 3px;
+}
+
+.auth-message {
+  margin: 0;
+  padding: 11px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.auth-message.error {
+  background: #fff0f0;
+  color: #c93636;
+}
+
+.auth-message.success {
+  background: #ddf8eb;
+  color: #138454;
+}
+
+.auth-switch {
+  color: #77839a;
+  font-size: 13px;
+  margin: 24px 0 0;
+  text-align: center;
+}
+
+.auth-switch a {
+  color: #315bd6;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-switch a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 650px) {
   .record-form {
     grid-template-columns: 1fr;
@@ -586,5 +709,9 @@ tbody tr:last-child td {
 
   .form-actions {
     flex-wrap: wrap;
+  }
+
+  .auth-card {
+    padding: 25px 20px;
   }
 }

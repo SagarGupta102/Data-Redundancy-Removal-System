@@ -1,6 +1,7 @@
 import "./Dashboard.css";
 import { useEffect, useState } from "react";
 import StatCard from "../components/StatCard.jsx";
+import { apiFetch } from "../api";
 
 function Dashboard() {
 const [totalRecords, setTotalRecords] = useState(0);
@@ -20,7 +21,7 @@ const [loadingActivity, setLoadingActivity] = useState(true);
 useEffect(() => {
   const fetchTotalRecords = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/records");
+      const response = await apiFetch("/api/records");
 
       if (!response.ok) {
         throw new Error("Failed to fetch records");
@@ -41,9 +42,7 @@ useEffect(() => {
 useEffect(() => {
   const fetchDuplicates = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/duplicates"
-      );
+      const response = await apiFetch("/api/duplicates");
 
       if (!response.ok) {
         throw new Error("Failed to fetch duplicates");
@@ -65,9 +64,7 @@ useEffect(() => {
 useEffect(() => {
   const fetchInvalidAttempts = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/invalid-attempts"
-      );
+      const response = await apiFetch("/api/invalid-attempts");
 
       if (!response.ok) {
         throw new Error("Failed to fetch invalid attempts");
@@ -89,7 +86,7 @@ useEffect(() => {
 }, []);
 
 useEffect(() => {
-  fetch("http://localhost:5000/api/possible-duplicates")
+  apiFetch("/api/possible-duplicates")
     .then((response) => {
       if (!response.ok) {
         throw new Error("Failed to fetch possible duplicates");
@@ -107,9 +104,7 @@ useEffect(() => {
 useEffect(() => {
   const fetchRecentActivity = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/activity"
-      );
+      const response = await apiFetch("/api/activity");
 
       if (!response.ok) {
         throw new Error("Failed to fetch recent activity");

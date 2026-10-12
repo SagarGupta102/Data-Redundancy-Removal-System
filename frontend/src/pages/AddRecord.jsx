@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { apiFetch } from "../api";
 
 function AddRecord() {
   const [formData, setFormData] = useState({
@@ -49,7 +50,7 @@ function AddRecord() {
     setMessageType("info");
 
     try {
-      const response = await fetch("http://localhost:5000/api/records", {
+      const response = await apiFetch("/api/records", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

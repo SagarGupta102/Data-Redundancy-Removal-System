@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "../api";
 
 function AllRecords() {
   const [records, setRecords] = useState([]);
@@ -9,9 +10,7 @@ function AllRecords() {
   useEffect(() => {
     async function fetchRecords() {
       try {
-        const response = await fetch(
-          "http://localhost:5000/api/records"
-        );
+        const response = await apiFetch("/api/records");
 
         const result = await response.json();
 
